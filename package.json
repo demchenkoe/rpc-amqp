@@ -1,6 +1,6 @@
 {
   "name": "@goldix.org/rpc-amqp",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "description": "RPC over AMQP",
   "main": "AmqpRpcBase.js",
   "scripts": {
@@ -20,7 +20,7 @@
   "author": "Eugene Demchenko (demchenkoev@gmail.com)",
   "license": "GPLv3",
   "dependencies": {
-    "@goldix.org/rpc-events": "0.0.3",
+    "@goldix.org/rpc-events": "0.0.4",
     "amqplib": "^0.5.3"
   }
 }
