@@ -16,8 +16,6 @@ class AmqpRpcBase {
       this.connectionOptions = options.connectionOptions || 'amqp://guest:guest@localhost:5672'
       this.socketOptions = options.socketOptions || {}
     }
-
-    this.clientCalls = {}
   }
 
   /**

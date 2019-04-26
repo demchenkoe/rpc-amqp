@@ -5,7 +5,11 @@ const { ClassOf }   = require('./utils')
 const { ERRORS }   = require('./errors')
 
 class AmqpRpcServer extends AmqpRpcBase {
-
+  /**
+   * @param {Object} options
+   * @param {String} options.exchange   name of exchange. Default is "rpc_exchange"
+   * @param {String} options.serverCtrlQueue   name of control queue
+   */
   constructor(options) {
     super(options)
 
@@ -21,7 +25,7 @@ class AmqpRpcServer extends AmqpRpcBase {
 
   async createServerCtrlQueue() {
     if(this.serverCtrlQueue) return this.serverCtrlQueue
-    let queueName = this.generateQueueName('ServerCtrlQueue')
+    let queueName = this.options.serverCtrlQueue || this.generateQueueName('ServerCtrlQueue')
     return this.serverCtrlQueue = new Promise(async (resolve, reject) => {
       this.createChannel()
         .then( async (ch) => {

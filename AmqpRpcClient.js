@@ -5,6 +5,12 @@ const { RemoteProcedureCaller } = require('@goldix.org/rpc-events/RemoteProcedur
 
 class AmqpRpcClient extends AmqpRpcBase {
 
+  /**
+   * @param {Object} options
+   * @param {String} options.exchange   name of exchange. Default is "rpc_exchange"
+   * @param {String} options.clientCtrlQueue   name of control queue
+   * @param {Class}  options.RemoteProcedureCaller custom class of Caller
+   */
   constructor(options) {
     super(options)
     if(!this.options.RemoteProcedureCaller) {
@@ -22,7 +28,7 @@ class AmqpRpcClient extends AmqpRpcBase {
 
   async createClientCtrlQueue() {
     if(this.clientCtrlQueue) return this.clientCtrlQueue
-    let queueName = this.generateQueueName('ClientCtrlQueue')
+    let queueName = this.options.clientCtrlQueue || this.generateQueueName('ClientCtrlQueue')
     return this.clientCtrlQueue = new Promise(async (resolve, reject) => {
       this.createChannel()
         .then( async (ch) => {
