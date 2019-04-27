@@ -3,6 +3,9 @@ const { AmqpRpcClient } = require('../AmqpRpcClient')
 const rpc = new AmqpRpcClient()
 
 async function run() {
+
+  //This variant not support with autoRecovery option
+
   try {
     let content = {counterMax: 10}
     let options = {

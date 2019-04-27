@@ -10,11 +10,15 @@ class AmqpRpcClient extends AmqpRpcBase {
    * @param {String} options.exchange   name of exchange. Default is "rpc_exchange"
    * @param {String} options.clientCtrlQueue   name of control queue
    * @param {Class}  options.RemoteProcedureCaller custom class of Caller
+   * @param {Boolean}options.autoRecovery  create new Caller instance on unknown correlationId
    */
   constructor(options) {
     super(options)
     if(!this.options.RemoteProcedureCaller) {
       this.options.RemoteProcedureCaller = RemoteProcedureCaller
+    }
+    if(!this.options.autoRecovery) {
+      this.options.autoRecovery = false
     }
 
     this.calls = {}
@@ -55,9 +59,6 @@ class AmqpRpcClient extends AmqpRpcBase {
     let { replyTo: serverControlQueue, correlationId: baseCorrelationId } = msg.properties
 
     if(!callInfo.rpcCaller) {
-      if(content.event === 'ERROR') {
-        return Promise.reject(content)
-      }
 
       let { exchange, RemoteProcedureCaller, resolve, reject, ...taskOptions }  = {
         ...this.options,
@@ -87,6 +88,23 @@ class AmqpRpcClient extends AmqpRpcBase {
   }
 
   /**
+   * Called on worker event when detect unknown correlationId
+   * @param msg
+   * @param ch
+   * @param options
+   * @returns {Promise<undefined|*>}
+   */
+
+  async onUnknownCorrelationId(msg, ch, options) {
+    const { autoRecovery} = this.options
+    const { contentType, correlationId: baseCorrelationId } = msg.properties
+    if(autoRecovery && contentType === 'application/rpc-control.v1+json') {
+      const callInfo = this.calls[baseCorrelationId] = {}
+      return this.onCallerIncommingMessage(callInfo, msg)
+    }
+  }
+
+  /**
    * Handler for client incoming control messages
    * @param msg
    */
@@ -97,6 +115,7 @@ class AmqpRpcClient extends AmqpRpcBase {
     let callInfo = this.calls[baseCorrelationId]
     if(!callInfo) {
       debug(`Unknown base correlation ID ${baseCorrelationId}`)
+      await this.onUnknownCorrelationId(msg, ch, options)
       options.noAck || ch.ack(msg)
       return
     }
@@ -135,8 +154,8 @@ class AmqpRpcClient extends AmqpRpcBase {
    * @returns {Promise<*>}
    */
 
-  async execute(command, content = '', { timeout = 60000, contentType = 'application/json', ...options } = {}) {
-    let correlationId = uuid()
+  async execute(command, content = '', { timeout = 60000, contentType = 'application/json', baseCorrelationId ,...options } = {}) {
+    baseCorrelationId || (baseCorrelationId = uuid())
     let replyTo = await this.createClientCtrlQueue()
     let ch = await this.createChannel()
 
@@ -151,7 +170,7 @@ class AmqpRpcClient extends AmqpRpcBase {
 
     return new Promise(async (resolve, reject) => {
 
-      this.calls[correlationId] = {
+      this.calls[baseCorrelationId] = {
         resolve,
         reject,
         start: Date.now(),
@@ -161,7 +180,7 @@ class AmqpRpcClient extends AmqpRpcBase {
       }
 
       await ch.sendToQueue(command, content, {
-        correlationId,
+        correlationId: baseCorrelationId,
         replyTo,
         contentType
       });

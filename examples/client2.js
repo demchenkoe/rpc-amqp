@@ -18,6 +18,7 @@ class CounterCaller extends RemoteProcedureCaller {
 
 const rpc = new AmqpRpcClient({
   //RemoteProcedureCaller: CounterCaller //you can setup your custom caller for all rpc.execute()
+  //autoRecovery: true  //For create CounterCaller instance on each unknown base-correlation-id from worker
 })
 
 async function run() {
